@@ -19,6 +19,9 @@ function initializeApplication() {
         // Initialize collaboration manager first
         window.collaborationManager = new CollaborationManager();
         
+        // Initialize user WebSocket client
+        window.userWebSocketClient = new UserWebSocketClient();
+        
         // Initialize tree editor
         window.treeEditor = new TreeEditor();
         
@@ -49,6 +52,9 @@ function setupGlobalEventHandlers() {
     $(window).on('beforeunload', function() {
         if (window.collaborationManager) {
             window.collaborationManager.destroy();
+        }
+        if (window.userWebSocketClient) {
+            window.userWebSocketClient.disconnect();
         }
     });
     

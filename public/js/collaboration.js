@@ -22,8 +22,8 @@ class CollaborationManager {
      */
     init() {
         try {
-            // Connect to Yjs WebSocket provider
-            this.provider = new Y.WebsocketProvider('ws://localhost:1234', 'zeromq-topic-manager', this.ydoc);
+            // Connect to Python Yjs WebSocket provider
+            this.provider = new Y.WebsocketProvider('ws://localhost:8000/yjs-websocket', 'zeromq-topic-manager', this.ydoc);
             
             // Get shared XML data type
             this.xmlData = this.ydoc.getXmlElement('applications');
