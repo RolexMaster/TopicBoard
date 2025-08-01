@@ -1,0 +1,257 @@
+/* Global Styles */
+html, body {
+    height: 100%;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.container-fluid {
+    height: 100vh;
+    padding-bottom: 0;
+}
+
+/* Header Styles */
+.navbar-brand {
+    font-weight: 600;
+}
+
+/* Tree Container Styles */
+#treeContainer {
+    min-height: 400px;
+    border: 1px solid #e9ecef;
+    border-radius: 0.375rem;
+    background-color: #fafafa;
+}
+
+/* jsTree Customization */
+.jstree-default .jstree-anchor {
+    padding: 4px 8px;
+    font-size: 14px;
+}
+
+.jstree-default .jstree-icon.jstree-themeicon {
+    background-image: none;
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    text-align: center;
+    line-height: 18px;
+    font-size: 14px;
+}
+
+/* Application Node Icons */
+.jstree-default .jstree-icon.jstree-themeicon.app-icon::before {
+    content: '\f085'; /* fa-cogs */
+    color: #28a745;
+}
+
+/* Topic Node Icons */
+.jstree-default .jstree-icon.jstree-themeicon.topic-publish-icon::before {
+    content: '\f1e6'; /* fa-bullhorn */
+    color: #007bff;
+}
+
+.jstree-default .jstree-icon.jstree-themeicon.topic-subscribe-icon::before {
+    content: '\f1e5'; /* fa-volume-down */
+    color: #6f42c1;
+}
+
+/* Root Node Icon */
+.jstree-default .jstree-icon.jstree-themeicon.root-icon::before {
+    content: '\f1e0'; /* fa-share-alt */
+    color: #fd7e14;
+}
+
+/* Properties Panel Styles */
+#propertiesPanel .form-label {
+    font-weight: 500;
+    color: #495057;
+}
+
+#propertiesPanel .form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* XML Preview Styles */
+#xmlPreview {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    background-color: #f8f9fa !important;
+    border: 1px solid #e9ecef;
+}
+
+#xmlPreview code {
+    color: #212529;
+    background: none;
+    padding: 0;
+}
+
+/* Connection Status */
+#connectionStatus .alert {
+    margin-bottom: 0;
+    border-radius: 0.5rem 0 0 0;
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+#connectionStatus .alert-success {
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
+
+#connectionStatus .alert-warning {
+    background-color: #fff3cd;
+    color: #664d03;
+}
+
+#connectionStatus .alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Modal Enhancements */
+.modal-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.modal-title {
+    font-weight: 600;
+}
+
+/* Button Styles */
+.btn-group .btn {
+    font-size: 0.875rem;
+}
+
+.btn:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Card Enhancements */
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    font-weight: 500;
+}
+
+/* Collaboration Indicators */
+.user-cursor {
+    position: absolute;
+    width: 2px;
+    height: 20px;
+    background-color: #007bff;
+    z-index: 1000;
+}
+
+.user-cursor::after {
+    content: attr(data-user);
+    position: absolute;
+    top: -25px;
+    left: 0;
+    background-color: #007bff;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.user-selection {
+    background-color: rgba(0, 123, 255, 0.2);
+    border-radius: 3px;
+}
+
+/* Loading Indicators */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .card-header h5,
+    .card-header h6 {
+        font-size: 0.9rem;
+    }
+    
+    .btn-group .btn {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    #xmlPreview {
+        font-size: 10px;
+    }
+}
+
+@media (max-width: 576px) {
+    .navbar-brand {
+        font-size: 1rem;
+    }
+    
+    .btn-outline-light {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+}
+
+/* Animation for Smooth Transitions */
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.slide-down {
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Highlight Changes */
+.highlight-change {
+    background-color: #fff3cd !important;
+    transition: background-color 2s ease-out;
+}
+
+.highlight-change.fade-out {
+    background-color: transparent;
+}
+
+/* Custom Scrollbar */
+.overflow-auto::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.overflow-auto::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.overflow-auto::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.overflow-auto::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
