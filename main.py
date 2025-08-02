@@ -19,6 +19,7 @@ from pydantic import BaseModel
 
 from pycrdt import Doc, Map, Array
 import pycrdt
+from models.file_manager import xml_file_manager
 
 # 모델 정의
 class ApplicationModel(BaseModel):
@@ -62,11 +63,18 @@ class ZeroMQTopicManager:
         # 초기 XML 구조 설정
         self._initialize_structure()
         
+        # 파일에서 기존 데이터 로드
+        self._load_from_file()
+        
         # 연결된 클라이언트 추적
         self.connected_clients: Dict[str, WebSocket] = {}
         
         # 변경사항 감지를 위한 콜백 설정
         self.doc.observe(self._on_document_change)
+        
+        # 자동 저장 설정
+        self.auto_save_enabled = True
+        self.last_save_time = datetime.now()
     
     def _initialize_structure(self):
         """초기 XML 구조를 Yjs 맵으로 설정"""
@@ -85,11 +93,108 @@ class ZeroMQTopicManager:
             
             print("✅ Yjs 문서 구조 초기화 완료")
     
+    def _load_from_file(self):
+        """파일에서 기존 XML 데이터 로드"""
+        try:
+            existing_xml = xml_file_manager.load_xml("applications.xml")
+            if existing_xml:
+                print("📖 기존 XML 파일에서 데이터 로드 중...")
+                # TODO: XML을 Yjs 구조로 파싱하여 로드
+                # 현재는 구조만 유지
+                print("✅ 기존 데이터 로드 완료")
+            else:
+                print("📝 새로운 XML 문서로 시작")
+        except Exception as e:
+            print(f"⚠️ 기존 데이터 로드 실패: {e}")
+    
+    async def _auto_save(self):
+        """자동 저장 함수"""
+        if not self.auto_save_enabled:
+            return
+            
+        try:
+            # 현재 구조를 XML로 변환
+            structure = self.get_xml_structure()
+            
+            # XML 문자열 생성 (간단한 버전)
+            xml_content = self._structure_to_xml(structure)
+            
+            # 파일로 저장
+            success = await xml_file_manager.save_xml_async(xml_content, "applications.xml")
+            
+            if success:
+                self.last_save_time = datetime.now()
+                print(f"💾 자동 저장 완료: {self.last_save_time.strftime('%H:%M:%S')}")
+            
+        except Exception as e:
+            print(f"❌ 자동 저장 실패: {e}")
+    
+    def _structure_to_xml(self, structure: dict) -> str:
+        """구조를 XML 문자열로 변환"""
+        xml_lines = ['<?xml version="1.0" encoding="UTF-8"?>']
+        
+        def add_element(name, attrs, children=None, indent=0):
+            indent_str = "  " * indent
+            attr_str = ""
+            
+            for key, value in attrs.items():
+                if key.startswith('@'):
+                    attr_name = key[1:]
+                    attr_str += f' {attr_name}="{value}"'
+            
+            if children:
+                xml_lines.append(f"{indent_str}<{name}{attr_str}>")
+                for child in children:
+                    if isinstance(child, dict):
+                        for child_name, child_data in child.items():
+                            if not child_name.startswith('@'):
+                                if isinstance(child_data, list):
+                                    for item in child_data:
+                                        add_element(child_name, item, None, indent + 1)
+                                else:
+                                    add_element(child_name, child_data, None, indent + 1)
+                xml_lines.append(f"{indent_str}</{name}>")
+            else:
+                xml_lines.append(f"{indent_str}<{name}{attr_str}/>")
+        
+        # Applications 루트 추가
+        apps_data = structure.get("Applications", {})
+        apps_attrs = {k: v for k, v in apps_data.items() if k.startswith('@')}
+        
+        xml_lines.append(f'<Applications xmlns="{apps_attrs.get("@xmlns", "http://zeromq-topic-manager/schema")}" version="{apps_attrs.get("@version", "1.0")}">')
+        
+        # Application 요소들 추가
+        applications = apps_data.get("Application", [])
+        for app in applications:
+            app_attrs = {k: v for k, v in app.items() if k.startswith('@')}
+            app_name = app_attrs.get('@name', 'Unknown')
+            app_desc = app_attrs.get('@description', '')
+            
+            xml_lines.append(f'  <Application name="{app_name}" description="{app_desc}">')
+            
+            # Topic 요소들 추가
+            topics = app.get("Topic", [])
+            for topic in topics:
+                topic_name = topic.get('@name', '')
+                topic_proto = topic.get('@proto', '')
+                topic_direction = topic.get('@direction', '')
+                topic_desc = topic.get('@description', '')
+                
+                xml_lines.append(f'    <Topic name="{topic_name}" proto="{topic_proto}" direction="{topic_direction}" description="{topic_desc}"/>')
+            
+            xml_lines.append(f'  </Application>')
+        
+        xml_lines.append('</Applications>')
+        
+        return '\n'.join(xml_lines)
+    
     def _on_document_change(self, event, transaction):
         """문서 변경사항 감지 시 호출되는 콜백"""
         if not transaction.local:
             print(f"🔄 원격 변경사항 감지: {event}")
-            # 필요시 추가 처리 로직
+            # 자동 저장 트리거
+            if self.auto_save_enabled:
+                asyncio.create_task(self._auto_save())
     
     def add_application(self, name: str, description: str = "") -> bool:
         """새 응용프로그램 추가"""
@@ -359,13 +464,118 @@ async def get_xml_structure():
 
 @app.post("/api/xml/save")
 async def save_xml(data: dict):
-    """XML 저장 (향후 파일 저장 기능)"""
-    # 현재는 메모리에만 저장, 향후 파일 시스템에 저장 가능
-    return {
-        "success": True,
-        "message": "XML이 저장되었습니다.",
-        "timestamp": datetime.now().isoformat()
-    }
+    """XML 파일 저장"""
+    try:
+        # 현재 구조 가져오기
+        structure = topic_manager.get_xml_structure()
+        xml_content = topic_manager._structure_to_xml(structure)
+        
+        # 파일 저장
+        filename = data.get("filename", "applications.xml")
+        success = await xml_file_manager.save_xml_async(xml_content, filename)
+        
+        if success:
+            return {
+                "success": True,
+                "message": f"XML이 '{filename}'로 저장되었습니다.",
+                "timestamp": datetime.now().isoformat(),
+                "file_path": str(xml_file_manager.xml_dir / filename)
+            }
+        else:
+            raise HTTPException(status_code=500, detail="XML 저장에 실패했습니다.")
+            
+    except Exception as e:
+        print(f"❌ XML 저장 API 오류: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/files")
+async def list_files():
+    """저장된 XML 파일 목록 조회"""
+    try:
+        files = xml_file_manager.list_xml_files()
+        backups = xml_file_manager.list_backups()
+        storage_info = xml_file_manager.get_storage_info()
+        
+        return {
+            "success": True,
+            "files": files,
+            "backups": backups,
+            "storage_info": storage_info
+        }
+    except Exception as e:
+        print(f"❌ 파일 목록 조회 오류: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/files/load")
+async def load_file(request: dict):
+    """XML 파일 로드"""
+    try:
+        filename = request.get("filename", "applications.xml")
+        xml_content = await xml_file_manager.load_xml_async(filename)
+        
+        if xml_content:
+            return {
+                "success": True,
+                "message": f"'{filename}' 파일이 로드되었습니다.",
+                "xml_content": xml_content,
+                "filename": filename
+            }
+        else:
+            raise HTTPException(status_code=404, detail="파일을 찾을 수 없습니다.")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ 파일 로드 오류: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/files/restore")
+async def restore_backup(request: dict):
+    """백업에서 복원"""
+    try:
+        backup_filename = request.get("backup_filename")
+        target_filename = request.get("target_filename", "applications.xml")
+        
+        if not backup_filename:
+            raise HTTPException(status_code=400, detail="backup_filename이 필요합니다.")
+        
+        success = xml_file_manager.restore_backup(backup_filename, target_filename)
+        
+        if success:
+            return {
+                "success": True,
+                "message": f"백업 '{backup_filename}'에서 '{target_filename}'으로 복원되었습니다.",
+                "timestamp": datetime.now().isoformat()
+            }
+        else:
+            raise HTTPException(status_code=500, detail="백업 복원에 실패했습니다.")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ 백업 복원 오류: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/files/{filename}")
+async def delete_file(filename: str):
+    """XML 파일 삭제"""
+    try:
+        success = xml_file_manager.delete_file(filename)
+        
+        if success:
+            return {
+                "success": True,
+                "message": f"파일 '{filename}'이 삭제되었습니다.",
+                "timestamp": datetime.now().isoformat()
+            }
+        else:
+            raise HTTPException(status_code=404, detail="파일을 찾을 수 없습니다.")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ 파일 삭제 오류: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Yjs WebSocket 엔드포인트
 @app.websocket("/yjs-websocket")

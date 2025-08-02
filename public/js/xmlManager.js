@@ -15,10 +15,13 @@ class XMLManager {
         $('#exportBtn').on('click', () => this.exportXML());
         $('#generateCodeBtn').on('click', () => this.showCodeGenerationModal());
         $('#copyXmlBtn').on('click', () => this.copyXMLToClipboard());
+        
+        // 파일 관리 버튼 추가
+        this.addFileManagementButtons();
     }
 
     /**
-     * Save current XML structure
+     * Save current XML structure to file
      */
     async saveXML() {
         try {
@@ -27,29 +30,28 @@ class XMLManager {
                 return;
             }
 
-            const structure = window.collaborationManager.getXMLStructure();
-            const xmlString = this.objectToXML(structure);
-
-            // Save to server (could be implemented with actual backend)
             const response = await fetch('/api/xml/save', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    xml: xmlString,
+                    filename: 'applications.xml',
                     timestamp: new Date().toISOString()
                 })
             });
 
-            if (response.ok) {
-                this.showNotification('XML이 성공적으로 저장되었습니다.', 'success');
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                this.showNotification(`✅ ${result.message}`, 'success');
+                console.log(`💾 저장 위치: ${result.file_path}`);
             } else {
-                throw new Error('저장 실패');
+                throw new Error(result.detail || '저장 실패');
             }
         } catch (error) {
             console.error('Save error:', error);
-            this.showNotification('저장 중 오류가 발생했습니다.', 'error');
+            this.showNotification('❌ 저장 중 오류가 발생했습니다.', 'error');
         }
     }
 
@@ -749,6 +751,272 @@ class XMLManager {
         return str.replace(/(?:^\w|[A-Z]|\b\w)/g, (word) => {
             return word.toUpperCase();
         }).replace(/\s+/g, '');
+    }
+
+    /**
+     * Add file management buttons to header
+     */
+    addFileManagementButtons() {
+        const headerActions = $('.navbar-nav.ms-auto');
+        
+        // 파일 관리 버튼 추가
+        const fileManagerBtn = $(`
+            <button class="btn btn-outline-light ms-2" id="fileManagerBtn" title="파일 관리">
+                <i class="fas fa-folder-open"></i>
+            </button>
+        `);
+        
+        fileManagerBtn.on('click', () => this.showFileManagerModal());
+        headerActions.prepend(fileManagerBtn);
+    }
+
+    /**
+     * Show file manager modal
+     */
+    async showFileManagerModal() {
+        try {
+            // 파일 목록 가져오기
+            const response = await fetch('/api/files');
+            const data = await response.json();
+            
+            if (!response.ok || !data.success) {
+                throw new Error('파일 목록을 가져올 수 없습니다.');
+            }
+            
+            const modal = $(`
+                <div class="modal fade" id="fileManagerModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-folder-open me-2"></i>
+                                    파일 관리
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6><i class="fas fa-file-code me-2"></i>XML 파일</h6>
+                                        <div id="xmlFilesList" class="file-list">
+                                            ${this.renderFileList(data.files)}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6><i class="fas fa-archive me-2"></i>백업 파일</h6>
+                                        <div id="backupFilesList" class="file-list">
+                                            ${this.renderBackupList(data.backups)}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <hr>
+                                
+                                <div class="row">
+                                    <div class="col-12">
+                                        <h6><i class="fas fa-info-circle me-2"></i>저장소 정보</h6>
+                                        <div class="storage-info">
+                                            <small class="text-muted">
+                                                📁 XML 파일: ${data.storage_info.xml_files_count}개 
+                                                (${this.formatBytes(data.storage_info.xml_total_size)})<br>
+                                                📦 백업 파일: ${data.storage_info.backup_files_count}개 
+                                                (${this.formatBytes(data.storage_info.backup_total_size)})<br>
+                                                📍 저장 위치: ${data.storage_info.xml_dir}
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                                <button type="button" class="btn btn-primary" onclick="xmlManager.refreshFileList()">
+                                    <i class="fas fa-sync-alt"></i> 새로고침
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `);
+            
+            // 기존 모달 제거
+            $('#fileManagerModal').remove();
+            
+            // 새 모달 추가 및 표시
+            $('body').append(modal);
+            $('#fileManagerModal').modal('show');
+            
+            // 모달 숨김 시 제거
+            $('#fileManagerModal').on('hidden.bs.modal', () => {
+                $('#fileManagerModal').remove();
+            });
+            
+        } catch (error) {
+            console.error('File manager error:', error);
+            this.showNotification('파일 관리자를 열 수 없습니다.', 'error');
+        }
+    }
+
+    /**
+     * Render file list HTML
+     */
+    renderFileList(files) {
+        if (!files || files.length === 0) {
+            return '<div class="text-muted">저장된 파일이 없습니다.</div>';
+        }
+        
+        return files.map(file => `
+            <div class="file-item d-flex justify-content-between align-items-center p-2 border-bottom">
+                <div>
+                    <strong>${file.name}</strong><br>
+                    <small class="text-muted">
+                        ${new Date(file.modified).toLocaleString()} 
+                        (${this.formatBytes(file.size)})
+                    </small>
+                </div>
+                <div class="btn-group-vertical btn-group-sm">
+                    <button class="btn btn-outline-primary btn-sm" onclick="xmlManager.loadFile('${file.name}')" title="로드">
+                        <i class="fas fa-folder-open"></i>
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="xmlManager.deleteFile('${file.name}')" title="삭제">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    /**
+     * Render backup list HTML
+     */
+    renderBackupList(backups) {
+        if (!backups || backups.length === 0) {
+            return '<div class="text-muted">백업 파일이 없습니다.</div>';
+        }
+        
+        return backups.map(backup => `
+            <div class="file-item d-flex justify-content-between align-items-center p-2 border-bottom">
+                <div>
+                    <strong>${backup.name}</strong><br>
+                    <small class="text-muted">
+                        ${new Date(backup.created).toLocaleString()} 
+                        (${this.formatBytes(backup.size)})
+                    </small>
+                </div>
+                <div>
+                    <button class="btn btn-outline-success btn-sm" onclick="xmlManager.restoreBackup('${backup.name}')" title="복원">
+                        <i class="fas fa-undo"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    /**
+     * Load XML file
+     */
+    async loadFile(filename) {
+        try {
+            const response = await fetch('/api/files/load', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename })
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                this.showNotification(`📂 ${result.message}`, 'success');
+                // TODO: XML 내용을 Yjs 문서에 로드
+                console.log('로드된 XML:', result.xml_content);
+                $('#fileManagerModal').modal('hide');
+            } else {
+                throw new Error(result.detail || '파일 로드 실패');
+            }
+        } catch (error) {
+            console.error('Load file error:', error);
+            this.showNotification('파일 로드에 실패했습니다.', 'error');
+        }
+    }
+
+    /**
+     * Delete XML file
+     */
+    async deleteFile(filename) {
+        if (!confirm(`파일 '${filename}'을 삭제하시겠습니까?`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/files/${filename}`, {
+                method: 'DELETE'
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                this.showNotification(`🗑️ ${result.message}`, 'success');
+                await this.refreshFileList();
+            } else {
+                throw new Error(result.detail || '파일 삭제 실패');
+            }
+        } catch (error) {
+            console.error('Delete file error:', error);
+            this.showNotification('파일 삭제에 실패했습니다.', 'error');
+        }
+    }
+
+    /**
+     * Restore backup file
+     */
+    async restoreBackup(backupFilename) {
+        if (!confirm(`백업 '${backupFilename}'에서 복원하시겠습니까?`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/files/restore', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    backup_filename: backupFilename,
+                    target_filename: 'applications.xml'
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                this.showNotification(`🔄 ${result.message}`, 'success');
+                await this.refreshFileList();
+            } else {
+                throw new Error(result.detail || '백업 복원 실패');
+            }
+        } catch (error) {
+            console.error('Restore backup error:', error);
+            this.showNotification('백업 복원에 실패했습니다.', 'error');
+        }
+    }
+
+    /**
+     * Refresh file list
+     */
+    async refreshFileList() {
+        const modal = $('#fileManagerModal');
+        if (modal.length > 0) {
+            modal.modal('hide');
+            setTimeout(() => this.showFileManagerModal(), 300);
+        }
+    }
+
+    /**
+     * Format bytes to human readable string
+     */
+    formatBytes(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
     /**
