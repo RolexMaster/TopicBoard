@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Applications xmlns="http://zeromq-topic-manager/schema" version="1.0">
+  <Application name="VideoViewer" description="비디오 뷰어 응용프로그램">
+    <Topic name="PTZ_CONTROL" proto="ptz_ctl.proto" direction="publish" description="PTZ 제어 명령"/>
+    <Topic name="PTZ_STATUS" proto="ptz_info.proto" direction="subscribe" description="PTZ 상태 정보"/>
+    <Topic name="VIDEO_STREAM" proto="video.proto" direction="subscribe" description="비디오 스트림 데이터"/>
+  </Application>
+  <Application name="AudioController" description="오디오 제어 시스템">
+    <Topic name="AUDIO_COMMAND" proto="audio_cmd.proto" direction="publish" description="오디오 제어 명령"/>
+    <Topic name="AUDIO_STATUS" proto="audio_status.proto" direction="subscribe" description="오디오 상태 정보"/>
+  </Application>
+</Applications>
