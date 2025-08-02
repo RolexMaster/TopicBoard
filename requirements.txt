@@ -7,7 +7,7 @@ websockets==12.0
 
 # Collaborative editing (Yjs)
 pycrdt==0.12.26
-pycrdt-websocket==0.13.9
+pycrdt-websocket==0.16.0
 
 # Data validation and serialization
 pydantic==2.5.0
