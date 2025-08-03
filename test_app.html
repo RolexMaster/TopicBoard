@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test +App Button</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Test +App Button Functionality</h1>
+        <p>This page tests if the +app button modal opens correctly.</p>
+        
+        <button class="btn btn-success" id="testAddAppBtn">
+            <i class="fas fa-plus me-1"></i>App
+        </button>
+        
+        <div class="mt-3">
+            <p><strong>Instructions:</strong></p>
+            <ol>
+                <li>Click the +App button above</li>
+                <li>A modal should open asking for application name and description</li>
+                <li>If the modal opens, the button functionality is working</li>
+                <li>If no modal appears, there's an issue with the JavaScript</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- Add Application Modal -->
+    <div class="modal fade" id="addAppModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">응용프로그램 추가</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addAppForm">
+                        <div class="mb-3">
+                            <label for="appName" class="form-label">이름 *</label>
+                            <input type="text" class="form-control" id="appName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="appDescription" class="form-label">설명</label>
+                            <textarea class="form-control" id="appDescription" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-success" id="confirmAddApp">추가</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            console.log('Test page loaded');
+            
+            // Test the +app button functionality
+            $('#testAddAppBtn').on('click', function() {
+                console.log('Test +App button clicked');
+                $('#addAppForm')[0].reset();
+                $('#addAppModal').modal('show');
+            });
+            
+            // Test modal confirmation
+            $('#confirmAddApp').on('click', function() {
+                const name = $('#appName').val().trim();
+                const description = $('#appDescription').val().trim();
+                
+                if (!name) {
+                    alert('응용프로그램 이름을 입력하세요.');
+                    return;
+                }
+                
+                alert(`테스트 성공! 응용프로그램 "${name}"이 추가되었습니다.`);
+                $('#addAppModal').modal('hide');
+            });
+        });
+    </script>
+</body>
+</html>
