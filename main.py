@@ -58,7 +58,8 @@ class ZeroMQTopicManager:
     def __init__(self):
         # Yjs 문서 생성 (JavaScript와 완전 호환)
         self.doc = Doc()
-        self.root_map = self.doc.get_map("applications")
+        self.root_map = Map("applications")
+        self.doc.add(self.root_map)
         
         # 초기 XML 구조 설정
         self._initialize_structure()
@@ -80,12 +81,14 @@ class ZeroMQTopicManager:
         """초기 XML 구조를 Yjs 맵으로 설정"""
         if len(self.root_map) == 0:
             # Applications 루트 요소 생성
-            applications_elem = self.doc.get_map("Applications")
+            applications_elem = Map("Applications")
+            self.doc.add(applications_elem)
             applications_elem.set("xmlns", "http://zeromq-topic-manager/schema")
             applications_elem.set("version", "1.0")
             
             # Application 배열 생성
-            app_array = self.doc.get_array("Application")
+            app_array = Array("Application")
+            self.doc.add(app_array)
             applications_elem.set("Application", app_array)
             
             # 루트 맵에 Applications 설정
@@ -209,12 +212,14 @@ class ZeroMQTopicManager:
                     return False  # 이미 존재
             
             # 새 응용프로그램 생성
-            new_app = self.doc.get_map(f"app_{name}_{datetime.now().timestamp()}")
+            new_app = Map(f"app_{name}_{datetime.now().timestamp()}")
+            self.doc.add(new_app)
             new_app.set("name", name)
             new_app.set("description", description)
             
             # 토픽 배열 생성
-            topic_array = self.doc.get_array(f"topics_{name}_{datetime.now().timestamp()}")
+            topic_array = Array(f"topics_{name}_{datetime.now().timestamp()}")
+            self.doc.add(topic_array)
             new_app.set("Topic", topic_array)
             
             # 배열에 추가
@@ -253,7 +258,8 @@ class ZeroMQTopicManager:
                     return False  # 이미 존재
             
             # 새 토픽 생성
-            new_topic = self.doc.get_map(f"topic_{app_name}_{topic.name}_{datetime.now().timestamp()}")
+            new_topic = Map(f"topic_{app_name}_{topic.name}_{datetime.now().timestamp()}")
+            self.doc.add(new_topic)
             new_topic.set("name", topic.name)
             new_topic.set("proto", topic.proto)
             new_topic.set("direction", topic.direction)
