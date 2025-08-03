@@ -1,16 +1,16 @@
 # FastAPI and ASGI server
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
 
 # WebSocket support
 websockets==12.0
 
 # Collaborative editing (Yjs)
 pycrdt==0.12.26
-pycrdt-websocket==0.13.9
+pycrdt-websocket==0.16.0
 
 # Data validation and serialization
-pydantic==2.5.0
+pydantic==2.4.2
 
 # File handling
 python-multipart==0.0.6
@@ -20,7 +20,7 @@ aiofiles==23.2.1
 jinja2==3.1.2
 
 # XML processing
-lxml==4.9.3
+lxml==4.9.2
 xmltodict==0.13.0
 
 # Environment variables
