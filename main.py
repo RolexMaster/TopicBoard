@@ -672,14 +672,16 @@ async def user_websocket(websocket: WebSocket, user_id: str):
         await user_manager.disconnect(user_id)
 
 if __name__ == "__main__":
+    if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))  # Azure에선 PORT, 로컬에선 8000
     print("🚀 ZeroMQ Topic Manager (Python) 시작 중...")
-    print("📡 Yjs 실시간 협업 서버 활성화")
-    print("🌐 http://localhost:8000 에서 접속 가능")
-    
+    print("🕊️ Yjs 실시간 협업 서버 활성화")
+    print(f"🌐 http://localhost:{port} 에서 접속 가능")
+
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=8000,
+        port=port,
         reload=True,
         log_level="info"
     )
