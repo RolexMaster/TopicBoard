@@ -58,8 +58,8 @@ class ZeroMQTopicManager:
     def __init__(self):
         # Yjs 문서 생성 (JavaScript와 완전 호환)
         self.doc = Doc()
-        self.root_map = Map("applications")
-        self.doc.add(self.root_map)
+        self.root_map = Map()
+        self.doc["applications"] = self.root_map
         
         # 초기 XML 구조 설정
         self._initialize_structure()
@@ -81,18 +81,18 @@ class ZeroMQTopicManager:
         """초기 XML 구조를 Yjs 맵으로 설정"""
         if len(self.root_map) == 0:
             # Applications 루트 요소 생성
-            applications_elem = Map("Applications")
-            self.doc.add(applications_elem)
-            applications_elem.set("xmlns", "http://zeromq-topic-manager/schema")
-            applications_elem.set("version", "1.0")
+            applications_elem = Map()
+            self.doc["Applications"] = applications_elem
+            applications_elem["xmlns"] = "http://zeromq-topic-manager/schema"
+            applications_elem["version"] = "1.0"
             
             # Application 배열 생성
-            app_array = Array("Application")
-            self.doc.add(app_array)
-            applications_elem.set("Application", app_array)
+            app_array = Array()
+            self.doc["Application"] = app_array
+            applications_elem["Application"] = app_array
             
             # 루트 맵에 Applications 설정
-            self.root_map.set("Applications", applications_elem)
+            self.root_map["Applications"] = applications_elem
             
             print("✅ Yjs 문서 구조 초기화 완료")
     
