@@ -3,13 +3,13 @@
 ## 1. Azure Portal 설정
 
 ### Application Settings
-- `WEBSITES_PORT`: `8000`
+- `PORT`: Azure가 자동으로 설정 (동적 포트)
 - `SCM_DO_BUILD_DURING_DEPLOYMENT`: `true`
 
 ### Startup Command
 Azure Portal > App Service > Configuration > General settings > Startup Command:
 ```
-python -m uvicorn main:app --host 0.0.0.0 --port 8000
+python -m uvicorn main:app --host 0.0.0.0 --port $PORT
 ```
 
 ## 2. 정적 파일 서빙 확인

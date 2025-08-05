@@ -75,7 +75,9 @@ class CollaborationManager {
         
         try {
             // Connect to Python Yjs WebSocket provider
-            this.provider = new Y.WebsocketProvider('ws://localhost:8000/yjs-websocket', 'zeromq-topic-manager', this.ydoc);
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsHost = window.location.host;
+            this.provider = new Y.WebsocketProvider(`${wsProtocol}//${wsHost}/yjs-websocket`, 'zeromq-topic-manager', this.ydoc);
             
             // Get shared XML data type
             this.xmlData = this.ydoc.getXmlElement('applications');

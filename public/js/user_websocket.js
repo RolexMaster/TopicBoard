@@ -29,7 +29,9 @@ class UserWebSocketClient {
             this.updateConnectionStatus('connecting');
             
             // Python 서버의 사용자 WebSocket에 연결
-            this.socket = new WebSocket(`ws://localhost:8000/ws/users/${this.userId}`);
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsHost = window.location.host;
+            this.socket = new WebSocket(`${wsProtocol}//${wsHost}/ws/users/${this.userId}`);
             
             this.socket.onopen = () => {
                 console.log('User WebSocket 연결됨');
