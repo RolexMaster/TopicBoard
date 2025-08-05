@@ -1,27 +1,27 @@
 # FastAPI and ASGI server
-fastapi==0.109.0
-uvicorn[standard]==0.27.0
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
 
 # WebSocket support
-websockets==12.0
+websockets>=12.0
 
 # Collaborative editing (Yjs)
-pycrdt==0.12.26
-pycrdt-websocket==0.16.0
+pycrdt>=0.12.26
+pycrdt-websocket>=0.16.0
 
 # Data validation and serialization
-pydantic==2.4.2
+pydantic>=2.5.0
 
 # File handling
-python-multipart==0.0.6
-aiofiles==23.2.1
+python-multipart>=0.0.6
+aiofiles>=23.2.1
 
 # Template engine
-jinja2==3.1.2
+jinja2>=3.1.2
 
-# XML processing
-lxml==4.9.2
-xmltodict==0.13.0
+# XML processing - Python 3.13 호환 버전
+lxml>=5.0.0
+xmltodict>=0.13.0
 
 # Environment variables
-python-dotenv==1.0.0
+python-dotenv>=1.0.0
