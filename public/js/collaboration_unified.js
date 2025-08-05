@@ -3,6 +3,24 @@
  */
 class CollaborationManager {
     constructor() {
+        // Yjs 라이브러리가 로드되었는지 확인
+        if (typeof Y === 'undefined') {
+            console.error('Yjs 라이브러리가 로드되지 않았습니다. 협업 기능이 비활성화됩니다.');
+            this.ydoc = null;
+            this.provider = null;
+            this.xmlData = null;
+            this.awareness = null;
+            this.users = new Map();
+            this.currentUser = {
+                id: this.generateUserId(),
+                name: `사용자_${Math.floor(Math.random() * 1000)}`,
+                color: this.generateUserColor()
+            };
+            
+            this.updateConnectionStatus('error');
+            return;
+        }
+        
         this.ydoc = new Y.Doc();
         this.provider = null;
         this.xmlData = null;
@@ -21,6 +39,12 @@ class CollaborationManager {
      * 협업 시스템 초기화
      */
     init() {
+        // Yjs가 없는 경우 초기화 건너뛰기
+        if (!this.ydoc) {
+            console.log('Yjs가 없어서 협업 기능이 비활성화됩니다.');
+            return;
+        }
+        
         try {
             // Python 서버의 Yjs WebSocket에 연결
             this.provider = new Y.WebsocketProvider('ws://localhost:8000/yjs-websocket', 'zeromq-topic-manager', this.ydoc);
@@ -51,6 +75,11 @@ class CollaborationManager {
      * 사용자 존재감 및 presence 설정
      */
     setupAwareness() {
+        if (!this.awareness) {
+            console.log('Awareness가 설정되지 않았습니다.');
+            return;
+        }
+        
         this.awareness.setLocalStateField('user', this.currentUser);
         
         this.awareness.on('change', () => {
@@ -66,6 +95,11 @@ class CollaborationManager {
      * 실시간 업데이트를 위한 이벤트 리스너 설정
      */
     setupEventListeners() {
+        if (!this.xmlData || !this.provider) {
+            console.log('XML 데이터 또는 프로바이더가 설정되지 않았습니다.');
+            return;
+        }
+        
         // XML 구조 변경 감지
         this.xmlData.observe((event) => {
             this.handleXMLChange(event);
@@ -87,6 +121,11 @@ class CollaborationManager {
      * 빈 경우 초기 XML 구조 설정
      */
     initializeXMLStructure() {
+        if (!this.xmlData) {
+            console.log('XML 데이터가 설정되지 않았습니다.');
+            return;
+        }
+        
         if (this.xmlData.length === 0) {
             // 기본 XML 구조 생성
             const applications = new Y.XmlElement('Applications');
@@ -130,6 +169,11 @@ class CollaborationManager {
      * XML에 응용프로그램 추가
      */
     addApplication(name, description = '') {
+        if (!this.xmlData) {
+            console.log('XML 데이터가 설정되지 않았습니다.');
+            return false;
+        }
+        
         try {
             const applications = this.xmlData.get(0);
             if (!applications) {
@@ -440,6 +484,11 @@ class CollaborationManager {
      * 사용자 목록 업데이트
      */
     updateUserList() {
+        if (!this.awareness) {
+            console.log('Awareness가 설정되지 않았습니다.');
+            return;
+        }
+        
         try {
             const states = this.awareness.getStates();
             const userList = $('#userList');
@@ -537,11 +586,15 @@ class CollaborationManager {
      * 리소스 정리
      */
     destroy() {
-        if (this.provider) {
-            this.provider.destroy();
-        }
-        if (this.ydoc) {
-            this.ydoc.destroy();
+        try {
+            if (this.provider) {
+                this.provider.destroy();
+            }
+            if (this.ydoc) {
+                this.ydoc.destroy();
+            }
+        } catch (error) {
+            console.error('리소스 정리 중 오류:', error);
         }
     }
 }
