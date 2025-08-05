@@ -57,6 +57,19 @@ wss.on('connection', (ws, req) => {
   setupWSConnection(ws, req);
 });
 
+// Yjs 문서 저장소 (메모리 기반)
+const docs = new Map();
+
+// Yjs 문서 생성 및 관리
+function getOrCreateDoc(docName) {
+  if (!docs.has(docName)) {
+    const ydoc = new Y.Doc();
+    docs.set(docName, ydoc);
+    console.log(`Created new Yjs document: ${docName}`);
+  }
+  return docs.get(docName);
+}
+
 // Socket.IO for additional real-time features
 const io = socketIo(server, {
   cors: {

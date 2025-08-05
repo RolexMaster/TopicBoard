@@ -88,11 +88,7 @@ class ZeroMQTopicManager:
             
             # Application 배열 생성
             app_array = Array()
-            self.doc["Application"] = app_array
             applications_elem["Application"] = app_array
-            
-            # 루트 맵에 Applications 설정
-            self.root_map["Applications"] = applications_elem
             
             print("✅ Yjs 문서 구조 초기화 완료")
     
@@ -406,6 +402,15 @@ async def serve_test():
     except FileNotFoundError:
         return HTMLResponse("<h1>Test file not found</h1>", status_code=404)
 
+@app.get("/test_yjs", response_class=HTMLResponse)
+async def serve_test_yjs():
+    """Yjs 테스트 페이지 서빙"""
+    try:
+        with open("test_yjs.html", "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    except FileNotFoundError:
+        return HTMLResponse("<h1>Yjs test file not found</h1>", status_code=404)
+
 # REST API 엔드포인트
 @app.get("/api/applications")
 async def get_applications():
@@ -600,15 +605,19 @@ async def yjs_websocket_endpoint(websocket: WebSocket):
     print("🔌 새로운 Yjs WebSocket 연결")
     
     try:
-        # 간단한 WebSocket 메시지 처리 (pycrdt-websocket 없이)
-        # pycrdt 문서를 직접 처리
-        
-        # 연결 유지
+        # Yjs 프로토콜 처리
+        # 바이너리 메시지 처리
         while True:
             try:
-                # WebSocket 메시지 수신 대기
-                message = await websocket.receive_text()
-                # pycrdt가 자동으로 처리
+                # 바이너리 메시지 수신
+                message = await websocket.receive_bytes()
+                print(f"📨 Yjs 바이너리 메시지 수신: {len(message)} bytes")
+                
+                # Yjs 문서에 메시지 적용
+                # 실제로는 Yjs 프로토콜을 파싱하고 처리해야 함
+                # 현재는 간단한 에코 응답
+                await websocket.send_bytes(message)
+                
             except WebSocketDisconnect:
                 break
             except Exception as e:
@@ -619,6 +628,8 @@ async def yjs_websocket_endpoint(websocket: WebSocket):
         print("🔌 Yjs WebSocket 연결 종료")
     except Exception as e:
         print(f"❌ WebSocket 오류: {e}")
+        import traceback
+        traceback.print_exc()
     finally:
         # 정리 작업
         pass

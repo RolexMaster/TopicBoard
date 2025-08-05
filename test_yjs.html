@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yjs 연결 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .connected { background-color: #d4edda; color: #155724; }
+        .disconnected { background-color: #f8d7da; color: #721c24; }
+        .connecting { background-color: #fff3cd; color: #856404; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Yjs 연결 테스트</h1>
+    
+    <div id="status" class="status disconnected">
+        상태: 연결되지 않음
+    </div>
+    
+    <div>
+        <button id="connectBtn">연결 시도</button>
+        <button id="disconnectBtn">연결 해제</button>
+        <button id="clearLogBtn">로그 지우기</button>
+    </div>
+    
+    <h3>로그</h3>
+    <div id="log" class="log"></div>
+    
+    <h3>XML 데이터</h3>
+    <pre id="xmlData">로딩 중...</pre>
+    
+    <!-- Yjs 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/yjs@13.6.10/dist/yjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/y-websocket@1.5.0/dist/y-websocket.min.js"></script>
+    
+    <script>
+        let ydoc = null;
+        let provider = null;
+        let xmlData = null;
+        
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function updateStatus(status, message) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${status}`;
+            statusDiv.textContent = `상태: ${message}`;
+        }
+        
+        function updateXMLData() {
+            const xmlDiv = document.getElementById('xmlData');
+            if (xmlData) {
+                try {
+                    const structure = getXMLStructure();
+                    xmlDiv.textContent = JSON.stringify(structure, null, 2);
+                } catch (error) {
+                    xmlDiv.textContent = `오류: ${error.message}`;
+                }
+            } else {
+                xmlDiv.textContent = 'XML 데이터 없음';
+            }
+        }
+        
+        function getXMLStructure() {
+            if (!xmlData) {
+                return { error: 'XML 데이터 없음' };
+            }
+            
+            try {
+                const applications = xmlData.firstChild;
+                if (!applications) {
+                    return {
+                        Applications: {
+                            '@xmlns': 'http://zeromq-topic-manager/schema',
+                            '@version': '1.0',
+                            Application: []
+                        }
+                    };
+                }
+                
+                const result = {
+                    Applications: {
+                        '@xmlns': applications.getAttribute('xmlns') || 'http://zeromq-topic-manager/schema',
+                        '@version': applications.getAttribute('version') || '1.0',
+                        Application: []
+                    }
+                };
+                
+                for (let i = 0; i < applications.childNodes.length; i++) {
+                    const app = applications.childNodes[i];
+                    if (app.nodeName === 'Application') {
+                        const appData = {
+                            '@name': app.getAttribute('name'),
+                            '@description': app.getAttribute('description') || '',
+                            Topic: []
+                        };
+                        
+                        for (let j = 0; j < app.childNodes.length; j++) {
+                            const topic = app.childNodes[j];
+                            if (topic.nodeName === 'Topic') {
+                                const topicData = {
+                                    '@name': topic.getAttribute('name'),
+                                    '@proto': topic.getAttribute('proto'),
+                                    '@direction': topic.getAttribute('direction'),
+                                    '@description': topic.getAttribute('description') || ''
+                                };
+                                appData.Topic.push(topicData);
+                            }
+                        }
+                        
+                        result.Applications.Application.push(appData);
+                    }
+                }
+                
+                return result;
+            } catch (error) {
+                return { error: error.message };
+            }
+        }
+        
+        function connect() {
+            log('Yjs 연결 시도 중...');
+            updateStatus('connecting', '연결 중...');
+            
+            try {
+                // Yjs 문서 생성
+                ydoc = new Y.Doc();
+                log('Yjs 문서 생성됨');
+                
+                // WebSocket 연결
+                const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsHost = window.location.host;
+                const wsUrl = `${wsProtocol}//${wsHost}/yjs-websocket`;
+                log(`WebSocket URL: ${wsUrl}`);
+                
+                provider = new Y.WebsocketProvider(wsUrl, 'zeromq-topic-manager', ydoc);
+                log('WebSocket 프로바이더 생성됨');
+                
+                // XML 데이터 가져오기
+                xmlData = ydoc.getXmlElement('Applications');
+                log('XML 데이터 요소 가져옴');
+                
+                // 이벤트 리스너 설정
+                provider.on('status', (event) => {
+                    log(`프로바이더 상태: ${event.status}`);
+                    updateStatus(event.status, `연결 상태: ${event.status}`);
+                });
+                
+                provider.on('sync', (isSynced) => {
+                    log(`동기화 상태: ${isSynced}`);
+                    if (isSynced) {
+                        updateStatus('connected', '연결됨');
+                        updateXMLData();
+                    }
+                });
+                
+                provider.on('connection-error', (error) => {
+                    log(`연결 오류: ${error}`);
+                    updateStatus('error', '연결 오류');
+                });
+                
+                provider.on('disconnect', () => {
+                    log('연결 해제됨');
+                    updateStatus('disconnected', '연결 해제됨');
+                });
+                
+                // XML 변경 감지
+                xmlData.observe((event) => {
+                    log('XML 변경 감지됨');
+                    updateXMLData();
+                });
+                
+                log('연결 설정 완료');
+                
+            } catch (error) {
+                log(`연결 오류: ${error.message}`);
+                updateStatus('error', `연결 오류: ${error.message}`);
+            }
+        }
+        
+        function disconnect() {
+            log('연결 해제 중...');
+            
+            if (provider) {
+                provider.destroy();
+                provider = null;
+            }
+            
+            if (ydoc) {
+                ydoc.destroy();
+                ydoc = null;
+            }
+            
+            xmlData = null;
+            updateStatus('disconnected', '연결 해제됨');
+            log('연결 해제 완료');
+        }
+        
+        // 이벤트 리스너
+        document.getElementById('connectBtn').addEventListener('click', connect);
+        document.getElementById('disconnectBtn').addEventListener('click', disconnect);
+        document.getElementById('clearLogBtn').addEventListener('click', () => {
+            document.getElementById('log').innerHTML = '';
+        });
+        
+        // 페이지 로드 시 자동 연결
+        window.addEventListener('load', () => {
+            log('페이지 로드됨');
+            if (typeof Y !== 'undefined') {
+                log('Yjs 라이브러리 로드됨');
+                connect();
+            } else {
+                log('Yjs 라이브러리가 로드되지 않음');
+                updateStatus('error', 'Yjs 라이브러리 없음');
+            }
+        });
+    </script>
+</body>
+</html>
