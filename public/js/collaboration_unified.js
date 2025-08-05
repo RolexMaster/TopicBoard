@@ -549,11 +549,52 @@ class CollaborationManager {
             if (previewElement.length > 0) {
                 previewElement.text(xmlString);
                 console.log('XML 미리보기 업데이트 완료');
+                
+                // 연결 상태에 따라 미리보기 상태 표시
+                this.updatePreviewStatus();
             } else {
                 console.error('XML 미리보기 요소를 찾을 수 없습니다');
             }
         } catch (error) {
             console.error('XML 미리보기 업데이트 실패:', error);
+            // 오류가 발생해도 기본 XML 구조 표시
+            this.showDefaultXML();
+        }
+    }
+    
+    /**
+     * 미리보기 상태 업데이트
+     */
+    updatePreviewStatus() {
+        const previewContainer = $('#xmlPreview');
+        if (previewContainer.length > 0) {
+            // 연결 상태 확인
+            const isConnected = this.ydoc && this.awareness;
+            
+            if (isConnected) {
+                previewContainer.removeClass('offline-mode');
+                previewContainer.attr('title', '실시간 XML 미리보기');
+            } else {
+                previewContainer.addClass('offline-mode');
+                previewContainer.attr('title', '오프라인 모드 - 로컬 XML 미리보기');
+            }
+        }
+    }
+    
+    /**
+     * 기본 XML 구조 표시
+     */
+    showDefaultXML() {
+        const previewElement = $('#xmlPreview code');
+        if (previewElement.length > 0) {
+            const defaultXML = `<?xml version="1.0" encoding="UTF-8"?>
+<Applications xmlns="http://zeromq-topic-manager/schema" version="1.0">
+  <!-- 기본 XML 구조 -->
+  <Application name="샘플 앱" description="샘플 응용프로그램">
+    <Topic name="sample_topic" proto="sample.proto" direction="publish" description="샘플 토픽"/>
+  </Application>
+</Applications>`;
+            previewElement.text(defaultXML);
         }
     }
 
