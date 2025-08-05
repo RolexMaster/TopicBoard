@@ -71,6 +71,14 @@ function initializeApplication() {
         console.log('All components initialized successfully');
         showSuccessMessage('애플리케이션이 성공적으로 초기화되었습니다.');
         
+        // 초기 XML 미리보기 업데이트
+        setTimeout(() => {
+            if (window.collaborationManager) {
+                console.log('초기 XML 미리보기 업데이트 시도');
+                window.collaborationManager.updateXMLPreview();
+            }
+        }, 1000);
+        
     } catch (error) {
         console.error('Failed to initialize application:', error);
         showErrorMessage('애플리케이션 초기화에 실패했습니다: ' + error.message);
