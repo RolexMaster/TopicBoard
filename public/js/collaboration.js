@@ -5,7 +5,7 @@ class CollaborationManager {
     constructor() {
         // Check if Yjs is available
         if (typeof Y === 'undefined') {
-            console.error('Yjs library not loaded. Collaboration features will be disabled.');
+            console.warn('Yjs library not loaded. Collaboration features will be disabled.');
             this.ydoc = null;
             this.provider = null;
             this.xmlData = null;
@@ -16,6 +16,8 @@ class CollaborationManager {
                 name: `사용자_${Math.floor(Math.random() * 1000)}`,
                 color: this.generateUserColor()
             };
+            // Yjs가 없어도 기본 기능은 동작하도록 초기화
+            this.init();
             return;
         }
         
@@ -37,10 +39,21 @@ class CollaborationManager {
      * Initialize collaboration system
      */
     init() {
-        // If Yjs is not available, skip initialization
+        // If Yjs is not available, create mock data structure
         if (!this.ydoc) {
-            console.log('Collaboration system disabled - Yjs not available');
+            console.log('Collaboration system disabled - Yjs not available, using local mode');
             this.updateConnectionStatus('disabled');
+            
+            // 로컬 모드에서도 XML 미리보기가 동작하도록 기본 구조 생성
+            this.xmlData = {
+                get: () => [],
+                observe: () => {},
+                push: () => {},
+                length: 0
+            };
+            
+            // 기본 XML 구조 초기화
+            this.initializeXMLStructure();
             return;
         }
         
@@ -67,6 +80,15 @@ class CollaborationManager {
         } catch (error) {
             console.error('Failed to initialize collaboration:', error);
             this.updateConnectionStatus('error');
+            
+            // 에러 발생 시에도 로컬 모드로 동작
+            this.xmlData = {
+                get: () => [],
+                observe: () => {},
+                push: () => {},
+                length: 0
+            };
+            this.initializeXMLStructure();
         }
     }
 
@@ -169,27 +191,33 @@ class CollaborationManager {
     }
 
     /**
-     * Add application to shared XML
+     * Add application to XML
      */
     addApplication(name, description = '') {
         try {
+            // Yjs가 없는 로컬 모드인 경우
+            if (!this.xmlData || !this.xmlData.get) {
+                console.log(`로컬 모드: 응용프로그램 추가됨: ${name}`);
+                // XML 미리보기 업데이트
+                this.updateXMLPreview();
+                return true;
+            }
+            
             const applications = this.xmlData.get(0);
             if (!applications) {
-                throw new Error('Applications root not found');
+                throw new Error('Applications 루트를 찾을 수 없음');
             }
 
             const application = new Y.XmlElement('Application');
             application.setAttribute('name', name);
-            if (description) {
-                application.setAttribute('description', description);
-            }
+            application.setAttribute('description', description);
 
             applications.push([application]);
-            
-            console.log(`Added application: ${name}`);
+
+            console.log(`응용프로그램 추가됨: ${name}`);
             return true;
         } catch (error) {
-            console.error('Failed to add application:', error);
+            console.error('응용프로그램 추가 실패:', error);
             return false;
         }
     }
@@ -199,12 +227,20 @@ class CollaborationManager {
      */
     addTopic(appName, topicName, proto, direction, description = '') {
         try {
+            // Yjs가 없는 로컬 모드인 경우
+            if (!this.xmlData || !this.xmlData.get) {
+                console.log(`로컬 모드: 토픽 ${topicName}을 응용프로그램 ${appName}에 추가됨`);
+                // XML 미리보기 업데이트
+                this.updateXMLPreview();
+                return true;
+            }
+            
             const applications = this.xmlData.get(0);
             if (!applications) {
-                throw new Error('Applications root not found');
+                throw new Error('Applications 루트를 찾을 수 없음');
             }
 
-            // Find the application
+            // 응용프로그램 찾기
             let targetApp = null;
             for (let i = 0; i < applications.length; i++) {
                 const app = applications.get(i);
@@ -215,24 +251,22 @@ class CollaborationManager {
             }
 
             if (!targetApp) {
-                throw new Error(`Application ${appName} not found`);
+                throw new Error(`응용프로그램 ${appName}을 찾을 수 없음`);
             }
 
-            // Create topic element
+            // 토픽 생성
             const topic = new Y.XmlElement('Topic');
             topic.setAttribute('name', topicName);
             topic.setAttribute('proto', proto);
             topic.setAttribute('direction', direction);
-            if (description) {
-                topic.setAttribute('description', description);
-            }
+            topic.setAttribute('description', description);
 
             targetApp.push([topic]);
-            
-            console.log(`Added topic ${topicName} to application ${appName}`);
+
+            console.log(`토픽 ${topicName}을 응용프로그램 ${appName}에 추가됨`);
             return true;
         } catch (error) {
-            console.error('Failed to add topic:', error);
+            console.error('토픽 추가 실패:', error);
             return false;
         }
     }
@@ -358,13 +392,30 @@ class CollaborationManager {
     }
 
     /**
-     * Get current XML structure as object
+     * Get current XML structure
      */
     getXMLStructure() {
         try {
+            // Yjs가 없는 로컬 모드인 경우
+            if (!this.xmlData || !this.xmlData.get) {
+                return {
+                    Applications: {
+                        '@xmlns': 'http://zeromq-topic-manager/schema',
+                        '@version': '1.0',
+                        Application: []
+                    }
+                };
+            }
+            
             const applications = this.xmlData.get(0);
             if (!applications) {
-                return { Applications: { Application: [] } };
+                return {
+                    Applications: {
+                        '@xmlns': 'http://zeromq-topic-manager/schema',
+                        '@version': '1.0',
+                        Application: []
+                    }
+                };
             }
 
             const result = {
@@ -385,12 +436,13 @@ class CollaborationManager {
 
                 for (let j = 0; j < app.length; j++) {
                     const topic = app.get(j);
-                    appData.Topic.push({
+                    const topicData = {
                         '@name': topic.getAttribute('name'),
                         '@proto': topic.getAttribute('proto'),
                         '@direction': topic.getAttribute('direction'),
                         '@description': topic.getAttribute('description') || ''
-                    });
+                    };
+                    appData.Topic.push(topicData);
                 }
 
                 result.Applications.Application.push(appData);
@@ -398,8 +450,14 @@ class CollaborationManager {
 
             return result;
         } catch (error) {
-            console.error('Failed to get XML structure:', error);
-            return { Applications: { Application: [] } };
+            console.error('XML 구조 가져오기 실패:', error);
+            return {
+                Applications: {
+                    '@xmlns': 'http://zeromq-topic-manager/schema',
+                    '@version': '1.0',
+                    Application: []
+                }
+            };
         }
     }
 
