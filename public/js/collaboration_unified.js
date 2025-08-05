@@ -71,7 +71,9 @@ class CollaborationManager {
         
         try {
             // Python 서버의 Yjs WebSocket에 연결
-            this.provider = new Y.WebsocketProvider('ws://localhost:8000/yjs-websocket', 'zeromq-topic-manager', this.ydoc);
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsHost = window.location.host;
+            this.provider = new Y.WebsocketProvider(`${wsProtocol}//${wsHost}/yjs-websocket`, 'zeromq-topic-manager', this.ydoc);
             
             // 공유 XML 데이터 타입 가져오기
             this.xmlData = this.ydoc.getXmlElement('applications');
