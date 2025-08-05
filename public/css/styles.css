@@ -86,6 +86,25 @@ html, body {
     padding: 0;
 }
 
+/* 오프라인 모드 스타일 */
+#xmlPreview.offline-mode {
+    border-left: 4px solid #6c757d;
+    background-color: #f8f9fa !important;
+}
+
+#xmlPreview.offline-mode::before {
+    content: "오프라인 모드";
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    background-color: #6c757d;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: bold;
+}
+
 /* Connection Status */
 #connectionStatus .alert {
     margin-bottom: 0;

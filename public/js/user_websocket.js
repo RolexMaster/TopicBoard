@@ -25,6 +25,9 @@ class UserWebSocketClient {
     
     connect() {
         try {
+            // 연결 상태를 '연결 중'으로 설정
+            this.updateConnectionStatus('connecting');
+            
             // Python 서버의 사용자 WebSocket에 연결
             this.socket = new WebSocket(`ws://localhost:8000/ws/users/${this.userId}`);
             
@@ -56,12 +59,23 @@ class UserWebSocketClient {
                 this.isConnected = false;
                 this.updateConnectionStatus('disconnected');
                 
-                // 재연결 시도
-                setTimeout(() => {
-                    if (!this.isConnected) {
-                        this.connect();
-                    }
-                }, 3000);
+                // 재연결 시도 (최대 5회)
+                if (!this.reconnectAttempts) {
+                    this.reconnectAttempts = 0;
+                }
+                
+                if (this.reconnectAttempts < 5) {
+                    this.reconnectAttempts++;
+                    setTimeout(() => {
+                        if (!this.isConnected) {
+                            console.log(`재연결 시도 ${this.reconnectAttempts}/5`);
+                            this.connect();
+                        }
+                    }, 3000);
+                } else {
+                    console.log('재연결 시도 횟수 초과');
+                    this.updateConnectionStatus('error');
+                }
             };
             
             this.socket.onerror = (error) => {
@@ -192,18 +206,22 @@ class UserWebSocketClient {
             case 'connected':
                 statusEl.classList.add('alert-success');
                 if (icon) icon.className = 'fas fa-wifi me-2';
-                if (text) text.textContent = '연결됨';
+                if (text) text.textContent = '실시간 협업 연결됨';
                 break;
             case 'connecting':
                 statusEl.classList.add('alert-warning');
                 if (icon) icon.className = 'fas fa-spinner fa-spin me-2';
-                if (text) text.textContent = '연결 중...';
+                if (text) text.textContent = '실시간 협업 연결 중...';
                 break;
             case 'disconnected':
-            case 'error':
-                statusEl.classList.add('alert-danger');
+                statusEl.classList.add('alert-warning');
                 if (icon) icon.className = 'fas fa-exclamation-triangle me-2';
-                if (text) text.textContent = '연결 끊김';
+                if (text) text.textContent = '실시간 협업 연결 끊김 (재연결 시도 중)';
+                break;
+            case 'error':
+                statusEl.classList.add('alert-info');
+                if (icon) icon.className = 'fas fa-info-circle me-2';
+                if (text) text.textContent = '오프라인 모드 (기본 기능 사용 가능)';
                 break;
         }
     }
