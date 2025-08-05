@@ -90,6 +90,7 @@ html, body {
 #xmlPreview.offline-mode {
     border-left: 4px solid #6c757d;
     background-color: #f8f9fa !important;
+    position: relative;
 }
 
 #xmlPreview.offline-mode::before {
@@ -103,9 +104,17 @@ html, body {
     border-radius: 3px;
     font-size: 10px;
     font-weight: bold;
+    z-index: 10;
 }
 
 /* Connection Status */
+#connectionStatus {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
 #connectionStatus .alert {
     margin-bottom: 0;
     border-radius: 0.5rem 0 0 0;

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XML Preview Test</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>XML Preview Test</h1>
+        
+        <!-- XML Preview Panel -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                    <i class="fas fa-code me-2"></i>
+                    XML 미리보기
+                </h6>
+            </div>
+            <div class="card-body p-2">
+                <pre id="xmlPreview" class="h-100 mb-0 bg-light p-2 rounded overflow-auto"><code></code></pre>
+            </div>
+        </div>
+        
+        <!-- Connection Status -->
+        <div id="connectionStatus" class="position-fixed bottom-0 end-0 p-3">
+            <div class="alert alert-success d-flex align-items-center" role="alert">
+                <i class="fas fa-wifi me-2"></i>
+                <span>연결됨</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    
+    <!-- Yjs -->
+    <script src="https://cdn.jsdelivr.net/npm/yjs@13.6.10/dist/yjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/y-websocket@1.5.0/dist/y-websocket.min.js"></script>
+    
+    <!-- Test Script -->
+    <script>
+        $(document).ready(function() {
+            console.log('XML Preview Test 시작');
+            
+            // 테스트 XML 데이터
+            const testXML = `<?xml version="1.0" encoding="UTF-8"?>
+<Applications xmlns="http://zeromq-topic-manager/schema" version="1.0">
+  <Application name="테스트 앱" description="테스트 응용프로그램">
+    <Topic name="test_topic" proto="test.proto" direction="publish" description="테스트 토픽"/>
+  </Application>
+</Applications>`;
+            
+            // XML 미리보기 업데이트
+            $('#xmlPreview code').text(testXML);
+            
+            // 오프라인 모드 테스트
+            setTimeout(() => {
+                $('#xmlPreview').addClass('offline-mode');
+                $('#connectionStatus .alert').removeClass('alert-success').addClass('alert-info');
+                $('#connectionStatus .alert i').attr('class', 'fas fa-info-circle me-2');
+                $('#connectionStatus .alert span').text('오프라인 모드 (기본 기능 사용 가능)');
+            }, 2000);
+            
+            // 연결됨 모드 테스트
+            setTimeout(() => {
+                $('#xmlPreview').removeClass('offline-mode');
+                $('#connectionStatus .alert').removeClass('alert-info').addClass('alert-success');
+                $('#connectionStatus .alert i').attr('class', 'fas fa-wifi me-2');
+                $('#connectionStatus .alert span').text('실시간 협업 연결됨');
+            }, 4000);
+        });
+    </script>
+</body>
+</html>
