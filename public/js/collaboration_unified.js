@@ -18,6 +18,9 @@ class CollaborationManager {
             };
             
             this.updateConnectionStatus('error');
+            
+            // Yjs가 없어도 기본 XML 미리보기는 작동하도록 설정
+            this.initWithoutYjs();
             return;
         }
         
@@ -33,6 +36,27 @@ class CollaborationManager {
         };
         
         this.init();
+    }
+
+    /**
+     * Yjs 없이 초기화 (기본 기능만)
+     */
+    initWithoutYjs() {
+        console.log('Yjs 없이 기본 기능으로 초기화합니다.');
+        
+        // 기본 XML 구조 설정
+        this.xmlData = {
+            Applications: {
+                '@xmlns': 'http://zeromq-topic-manager/schema',
+                '@version': '1.0',
+                Application: []
+            }
+        };
+        
+        // 초기 XML 미리보기 업데이트
+        this.updateXMLPreview();
+        
+        console.log('기본 기능 초기화 완료');
     }
 
     /**
@@ -150,6 +174,11 @@ class CollaborationManager {
         $(document).trigger('xml-structure-changed', {
             structure: this.getXMLStructure()
         });
+        
+        // 트리 에디터도 업데이트
+        if (window.treeEditor) {
+            window.treeEditor.refreshTree();
+        }
     }
 
     /**
@@ -161,8 +190,8 @@ class CollaborationManager {
         // 사용자 목록 업데이트
         this.updateUserList();
         
-        // 원격 변경사항 하이라이트
-        this.highlightRemoteChanges(event);
+        // 원격 변경사항 하이라이트 (event 매개변수 제거)
+        this.highlightRemoteChanges();
     }
 
     /**
@@ -172,6 +201,28 @@ class CollaborationManager {
         if (!this.xmlData) {
             console.log('XML 데이터가 설정되지 않았습니다.');
             return false;
+        }
+        
+        // Yjs가 없는 경우 기본 방식으로 추가
+        if (typeof this.xmlData.get !== 'function') {
+            if (!this.xmlData.Applications) {
+                this.xmlData.Applications = {
+                    '@xmlns': 'http://zeromq-topic-manager/schema',
+                    '@version': '1.0',
+                    Application: []
+                };
+            }
+            
+            const newApp = {
+                '@name': name,
+                '@description': description,
+                Topic: []
+            };
+            
+            this.xmlData.Applications.Application.push(newApp);
+            console.log(`응용프로그램 추가됨: ${name}`);
+            this.updateXMLPreview();
+            return true;
         }
         
         try {
@@ -187,6 +238,10 @@ class CollaborationManager {
             applications.push([application]);
 
             console.log(`응용프로그램 추가됨: ${name}`);
+            
+            // XML 미리보기 업데이트
+            this.updateXMLPreview();
+            
             return true;
         } catch (error) {
             console.error('응용프로그램 추가 실패:', error);
@@ -198,6 +253,40 @@ class CollaborationManager {
      * 응용프로그램에 토픽 추가
      */
     addTopic(appName, topicName, proto, direction, description = '') {
+        // Yjs가 없는 경우 기본 방식으로 추가
+        if (typeof this.xmlData.get !== 'function') {
+            if (!this.xmlData.Applications || !this.xmlData.Applications.Application) {
+                console.error('Applications 구조가 없습니다.');
+                return false;
+            }
+            
+            const applications = Array.isArray(this.xmlData.Applications.Application) 
+                ? this.xmlData.Applications.Application 
+                : [this.xmlData.Applications.Application];
+            
+            const targetApp = applications.find(app => app['@name'] === appName);
+            if (!targetApp) {
+                console.error(`응용프로그램 ${appName}을 찾을 수 없음`);
+                return false;
+            }
+            
+            const newTopic = {
+                '@name': topicName,
+                '@proto': proto,
+                '@direction': direction,
+                '@description': description
+            };
+            
+            if (!targetApp.Topic) {
+                targetApp.Topic = [];
+            }
+            targetApp.Topic.push(newTopic);
+            
+            console.log(`토픽 ${topicName}을 응용프로그램 ${appName}에 추가됨`);
+            this.updateXMLPreview();
+            return true;
+        }
+        
         try {
             const applications = this.xmlData.get(0);
             if (!applications) {
@@ -228,6 +317,10 @@ class CollaborationManager {
             targetApp.push([topic]);
 
             console.log(`토픽 ${topicName}을 응용프로그램 ${appName}에 추가됨`);
+            
+            // XML 미리보기 업데이트
+            this.updateXMLPreview();
+            
             return true;
         } catch (error) {
             console.error('토픽 추가 실패:', error);
@@ -250,6 +343,10 @@ class CollaborationManager {
                 if (app.getAttribute('name') === appName) {
                     applications.delete(i, 1);
                     console.log(`응용프로그램 제거됨: ${appName}`);
+                    
+                    // XML 미리보기 업데이트
+                    this.updateXMLPreview();
+                    
                     return true;
                 }
             }
@@ -282,6 +379,10 @@ class CollaborationManager {
                         if (topic.getAttribute('name') === topicName) {
                             app.delete(j, 1);
                             console.log(`토픽 ${topicName}을 응용프로그램 ${appName}에서 제거됨`);
+                            
+                            // XML 미리보기 업데이트
+                            this.updateXMLPreview();
+                            
                             return true;
                         }
                     }
@@ -368,6 +469,17 @@ class CollaborationManager {
      */
     getXMLStructure() {
         try {
+            // Yjs가 없는 경우 기본 구조 반환
+            if (!this.xmlData || typeof this.xmlData.get !== 'function') {
+                return this.xmlData || {
+                    Applications: {
+                        '@xmlns': 'http://zeromq-topic-manager/schema',
+                        '@version': '1.0',
+                        Application: []
+                    }
+                };
+            }
+            
             const applications = this.xmlData.get(0);
             if (!applications) {
                 return {
@@ -427,10 +539,19 @@ class CollaborationManager {
      */
     updateXMLPreview() {
         try {
+            console.log('XML 미리보기 업데이트 시작');
             const structure = this.getXMLStructure();
+            console.log('XML 구조:', structure);
             const xmlString = this.objectToXML(structure);
+            console.log('XML 문자열:', xmlString);
             
-            $('#xmlPreview code').text(xmlString);
+            const previewElement = $('#xmlPreview code');
+            if (previewElement.length > 0) {
+                previewElement.text(xmlString);
+                console.log('XML 미리보기 업데이트 완료');
+            } else {
+                console.error('XML 미리보기 요소를 찾을 수 없습니다');
+            }
         } catch (error) {
             console.error('XML 미리보기 업데이트 실패:', error);
         }
@@ -541,7 +662,7 @@ class CollaborationManager {
     /**
      * 원격 변경사항 하이라이트
      */
-    highlightRemoteChanges(event) {
+    highlightRemoteChanges() {
         // 변경된 요소에 하이라이트 효과 추가
         $('.highlight-change').removeClass('highlight-change');
         
