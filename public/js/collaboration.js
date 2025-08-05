@@ -3,6 +3,22 @@
  */
 class CollaborationManager {
     constructor() {
+        // Check if Yjs is available
+        if (typeof Y === 'undefined') {
+            console.error('Yjs library not loaded. Collaboration features will be disabled.');
+            this.ydoc = null;
+            this.provider = null;
+            this.xmlData = null;
+            this.awareness = null;
+            this.users = new Map();
+            this.currentUser = {
+                id: this.generateUserId(),
+                name: `사용자_${Math.floor(Math.random() * 1000)}`,
+                color: this.generateUserColor()
+            };
+            return;
+        }
+        
         this.ydoc = new Y.Doc();
         this.provider = null;
         this.xmlData = null;
@@ -21,6 +37,13 @@ class CollaborationManager {
      * Initialize collaboration system
      */
     init() {
+        // If Yjs is not available, skip initialization
+        if (!this.ydoc) {
+            console.log('Collaboration system disabled - Yjs not available');
+            this.updateConnectionStatus('disabled');
+            return;
+        }
+        
         try {
             // Connect to Python Yjs WebSocket provider
             this.provider = new Y.WebsocketProvider('ws://localhost:8000/yjs-websocket', 'zeromq-topic-manager', this.ydoc);
@@ -51,6 +74,8 @@ class CollaborationManager {
      * Setup user awareness and presence
      */
     setupAwareness() {
+        if (!this.awareness) return;
+        
         this.awareness.setLocalStateField('user', this.currentUser);
         
         this.awareness.on('change', () => {
@@ -66,6 +91,8 @@ class CollaborationManager {
      * Setup event listeners for real-time updates
      */
     setupEventListeners() {
+        if (!this.xmlData || !this.provider) return;
+        
         // Listen for XML structure changes
         this.xmlData.observe((event) => {
             this.handleXMLChange(event);
@@ -87,6 +114,8 @@ class CollaborationManager {
      * Initialize XML structure if empty
      */
     initializeXMLStructure() {
+        if (!this.xmlData) return;
+        
         if (this.xmlData.length === 0) {
             // Create default XML structure
             const applications = new Y.XmlElement('Applications');
@@ -484,6 +513,11 @@ class CollaborationManager {
                 statusEl.addClass('alert-warning');
                 icon.attr('class', 'fas fa-spinner fa-spin me-2');
                 text.text('연결 중...');
+                break;
+            case 'disabled':
+                statusEl.addClass('alert-warning');
+                icon.attr('class', 'fas fa-ban me-2');
+                text.text('협업 기능 비활성화');
                 break;
             case 'disconnected':
             case 'error':

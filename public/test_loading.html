@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JavaScript Loading Test</title>
+</head>
+<body>
+    <h1>JavaScript Loading Test</h1>
+    <div id="status"></div>
+    
+    <!-- External JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.15/jstree.min.js"></script>
+    
+    <!-- Socket.IO Client -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    
+    <!-- Yjs -->
+    <script src="https://cdn.jsdelivr.net/npm/yjs@13.6.10/dist/yjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/y-websocket@1.5.0/dist/y-websocket.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="/js/xmlManager.js"></script>
+    <script src="/js/collaboration.js"></script>
+    <script src="/js/user_websocket.js"></script>
+    <script src="/js/treeEditor.js"></script>
+    <script src="/js/app.js"></script>
+    
+    <script>
+        // Test if all libraries loaded correctly
+        document.addEventListener('DOMContentLoaded', function() {
+            const status = document.getElementById('status');
+            let errors = [];
+            
+            // Test jQuery
+            if (typeof $ === 'undefined') {
+                errors.push('jQuery not loaded');
+            } else {
+                console.log('✓ jQuery loaded');
+            }
+            
+            // Test Socket.IO
+            if (typeof io === 'undefined') {
+                errors.push('Socket.IO not loaded');
+            } else {
+                console.log('✓ Socket.IO loaded');
+            }
+            
+            // Test Yjs
+            if (typeof Y === 'undefined') {
+                errors.push('Yjs not loaded');
+            } else {
+                console.log('✓ Yjs loaded');
+            }
+            
+            // Test custom classes
+            if (typeof CollaborationManager === 'undefined') {
+                errors.push('CollaborationManager not loaded');
+            } else {
+                console.log('✓ CollaborationManager loaded');
+            }
+            
+            if (typeof UserWebSocketClient === 'undefined') {
+                errors.push('UserWebSocketClient not loaded');
+            } else {
+                console.log('✓ UserWebSocketClient loaded');
+            }
+            
+            if (typeof TreeEditor === 'undefined') {
+                errors.push('TreeEditor not loaded');
+            } else {
+                console.log('✓ TreeEditor loaded');
+            }
+            
+            if (typeof XMLManager === 'undefined') {
+                errors.push('XMLManager not loaded');
+            } else {
+                console.log('✓ XMLManager loaded');
+            }
+            
+            if (errors.length === 0) {
+                status.innerHTML = '<p style="color: green;">✓ All libraries loaded successfully!</p>';
+                console.log('✓ All tests passed');
+            } else {
+                status.innerHTML = '<p style="color: red;">✗ Errors found:</p><ul>' + 
+                    errors.map(err => '<li>' + err + '</li>').join('') + '</ul>';
+                console.error('✗ Test failed:', errors);
+            }
+        });
+    </script>
+</body>
+</html>
