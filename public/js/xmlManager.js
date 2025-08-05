@@ -3,8 +3,13 @@
  */
 class XMLManager {
     constructor() {
-        this.currentXML = null;
-        this.setupEventListeners();
+        try {
+            this.currentXML = null;
+            this.setupEventListeners();
+        } catch (error) {
+            console.error('XMLManager constructor error:', error);
+            this.currentXML = null;
+        }
     }
 
     /**

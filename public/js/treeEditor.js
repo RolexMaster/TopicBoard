@@ -3,11 +3,19 @@
  */
 class TreeEditor {
     constructor() {
-        this.treeContainer = '#treeContainer';
-        this.selectedNode = null;
-        this.treeInstance = null;
-        
-        this.init();
+        try {
+            this.treeContainer = '#treeContainer';
+            this.selectedNode = null;
+            this.treeInstance = null;
+            
+            this.init();
+        } catch (error) {
+            console.error('TreeEditor constructor error:', error);
+            // 기본값으로 초기화
+            this.treeContainer = '#treeContainer';
+            this.selectedNode = null;
+            this.treeInstance = null;
+        }
     }
 
     /**

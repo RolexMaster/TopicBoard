@@ -4,13 +4,23 @@
  */
 class UserWebSocketClient {
     constructor() {
-        this.socket = null;
-        this.userId = this.generateUserId();
-        this.userName = `사용자_${Math.floor(Math.random() * 1000)}`;
-        this.userColor = this.generateUserColor();
-        this.isConnected = false;
-        
-        this.connect();
+        try {
+            this.socket = null;
+            this.userId = this.generateUserId();
+            this.userName = `사용자_${Math.floor(Math.random() * 1000)}`;
+            this.userColor = this.generateUserColor();
+            this.isConnected = false;
+            
+            this.connect();
+        } catch (error) {
+            console.error('UserWebSocketClient constructor error:', error);
+            // 기본값으로 초기화
+            this.socket = null;
+            this.userId = 'user_' + Math.random().toString(36).substr(2, 9);
+            this.userName = `사용자_${Math.floor(Math.random() * 1000)}`;
+            this.userColor = '#007bff';
+            this.isConnected = false;
+        }
     }
     
     connect() {

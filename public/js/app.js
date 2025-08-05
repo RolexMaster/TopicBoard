@@ -16,26 +16,64 @@ $(document).ready(function() {
  */
 function initializeApplication() {
     try {
+        console.log('Starting application initialization...');
+        
         // Initialize collaboration manager first
-        window.collaborationManager = new CollaborationManager();
+        try {
+            window.collaborationManager = new CollaborationManager();
+            console.log('CollaborationManager initialized successfully');
+        } catch (error) {
+            console.error('Failed to initialize CollaborationManager:', error);
+            showErrorMessage('협업 관리자 초기화에 실패했습니다: ' + error.message);
+            return;
+        }
         
         // Initialize user WebSocket client
-        window.userWebSocketClient = new UserWebSocketClient();
+        try {
+            window.userWebSocketClient = new UserWebSocketClient();
+            console.log('UserWebSocketClient initialized successfully');
+        } catch (error) {
+            console.error('Failed to initialize UserWebSocketClient:', error);
+            showErrorMessage('웹소켓 클라이언트 초기화에 실패했습니다: ' + error.message);
+            return;
+        }
         
         // Initialize tree editor
-        window.treeEditor = new TreeEditor();
+        try {
+            window.treeEditor = new TreeEditor();
+            console.log('TreeEditor initialized successfully');
+        } catch (error) {
+            console.error('Failed to initialize TreeEditor:', error);
+            showErrorMessage('트리 에디터 초기화에 실패했습니다: ' + error.message);
+            return;
+        }
         
         // Initialize XML manager
-        window.xmlManager = new XMLManager();
+        try {
+            window.xmlManager = new XMLManager();
+            console.log('XMLManager initialized successfully');
+        } catch (error) {
+            console.error('Failed to initialize XMLManager:', error);
+            showErrorMessage('XML 관리자 초기화에 실패했습니다: ' + error.message);
+            return;
+        }
         
         // Setup modal event handlers
-        setupModalHandlers();
+        try {
+            setupModalHandlers();
+            console.log('Modal handlers setup successfully');
+        } catch (error) {
+            console.error('Failed to setup modal handlers:', error);
+            showErrorMessage('모달 핸들러 설정에 실패했습니다: ' + error.message);
+            return;
+        }
         
         console.log('All components initialized successfully');
+        showSuccessMessage('애플리케이션이 성공적으로 초기화되었습니다.');
         
     } catch (error) {
         console.error('Failed to initialize application:', error);
-        showErrorMessage('애플리케이션 초기화에 실패했습니다.');
+        showErrorMessage('애플리케이션 초기화에 실패했습니다: ' + error.message);
     }
 }
 

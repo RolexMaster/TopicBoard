@@ -3,9 +3,40 @@
  */
 class CollaborationManager {
     constructor() {
-        // Check if Yjs is available
-        if (typeof Y === 'undefined') {
-            console.warn('Yjs library not loaded. Collaboration features will be disabled.');
+        try {
+            // Check if Yjs is available
+            if (typeof Y === 'undefined') {
+                console.warn('Yjs library not loaded. Collaboration features will be disabled.');
+                this.ydoc = null;
+                this.provider = null;
+                this.xmlData = null;
+                this.awareness = null;
+                this.users = new Map();
+                this.currentUser = {
+                    id: this.generateUserId(),
+                    name: `사용자_${Math.floor(Math.random() * 1000)}`,
+                    color: this.generateUserColor()
+                };
+                // Yjs가 없어도 기본 기능은 동작하도록 초기화
+                this.init();
+                return;
+            }
+            
+            this.ydoc = new Y.Doc();
+            this.provider = null;
+            this.xmlData = null;
+            this.awareness = null;
+            this.users = new Map();
+            this.currentUser = {
+                id: this.generateUserId(),
+                name: `사용자_${Math.floor(Math.random() * 1000)}`,
+                color: this.generateUserColor()
+            };
+            
+            this.init();
+        } catch (error) {
+            console.error('CollaborationManager constructor error:', error);
+            // 에러가 발생해도 기본 구조는 생성
             this.ydoc = null;
             this.provider = null;
             this.xmlData = null;
@@ -16,23 +47,8 @@ class CollaborationManager {
                 name: `사용자_${Math.floor(Math.random() * 1000)}`,
                 color: this.generateUserColor()
             };
-            // Yjs가 없어도 기본 기능은 동작하도록 초기화
             this.init();
-            return;
         }
-        
-        this.ydoc = new Y.Doc();
-        this.provider = null;
-        this.xmlData = null;
-        this.awareness = null;
-        this.users = new Map();
-        this.currentUser = {
-            id: this.generateUserId(),
-            name: `사용자_${Math.floor(Math.random() * 1000)}`,
-            color: this.generateUserColor()
-        };
-        
-        this.init();
     }
 
     /**
