@@ -397,6 +397,15 @@ async def serve_index():
     except FileNotFoundError:
         return HTMLResponse("<h1>Frontend files not found</h1>", status_code=404)
 
+@app.get("/test", response_class=HTMLResponse)
+async def serve_test():
+    """테스트 페이지 서빙"""
+    try:
+        with open("test_xml_preview.html", "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    except FileNotFoundError:
+        return HTMLResponse("<h1>Test file not found</h1>", status_code=404)
+
 # REST API 엔드포인트
 @app.get("/api/applications")
 async def get_applications():

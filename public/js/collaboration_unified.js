@@ -56,6 +56,9 @@ class CollaborationManager {
         // 초기 XML 미리보기 업데이트
         this.updateXMLPreview();
         
+        // 오프라인 모드 상태 표시
+        this.updatePreviewStatus();
+        
         console.log('기본 기능 초기화 완료');
     }
 
@@ -556,6 +559,8 @@ class CollaborationManager {
                 this.updatePreviewStatus();
             } else {
                 console.error('XML 미리보기 요소를 찾을 수 없습니다');
+                // 요소가 없어도 기본 XML 표시
+                this.showDefaultXML();
             }
         } catch (error) {
             console.error('XML 미리보기 업데이트 실패:', error);
@@ -570,8 +575,8 @@ class CollaborationManager {
     updatePreviewStatus() {
         const previewContainer = $('#xmlPreview');
         if (previewContainer.length > 0) {
-            // 연결 상태 확인
-            const isConnected = this.ydoc && this.awareness;
+            // 연결 상태 확인 - Yjs가 있고 provider가 연결된 상태
+            const isConnected = this.ydoc && this.provider && this.provider.wsconnected;
             
             if (isConnected) {
                 previewContainer.removeClass('offline-mode');
@@ -684,20 +689,24 @@ class CollaborationManager {
         
         switch (status) {
             case 'connected':
-                statusEl.removeClass('alert-danger alert-warning').addClass('alert-success');
+                statusEl.removeClass('alert-danger alert-warning alert-info').addClass('alert-success');
                 statusEl.find('i').attr('class', 'fas fa-wifi me-2');
-                statusEl.find('span').text('연결됨');
+                statusEl.find('span').text('실시간 협업 연결됨');
                 break;
             case 'connecting':
-                statusEl.removeClass('alert-success alert-danger').addClass('alert-warning');
+                statusEl.removeClass('alert-success alert-danger alert-info').addClass('alert-warning');
                 statusEl.find('i').attr('class', 'fas fa-spinner fa-spin me-2');
-                statusEl.find('span').text('연결 중...');
+                statusEl.find('span').text('실시간 협업 연결 중...');
                 break;
             case 'disconnected':
-            case 'error':
-                statusEl.removeClass('alert-success alert-warning').addClass('alert-danger');
+                statusEl.removeClass('alert-success alert-danger alert-info').addClass('alert-warning');
                 statusEl.find('i').attr('class', 'fas fa-exclamation-triangle me-2');
-                statusEl.find('span').text('연결 끊김');
+                statusEl.find('span').text('실시간 협업 연결 끊김 (재연결 시도 중)');
+                break;
+            case 'error':
+                statusEl.removeClass('alert-success alert-warning alert-danger').addClass('alert-info');
+                statusEl.find('i').attr('class', 'fas fa-info-circle me-2');
+                statusEl.find('span').text('오프라인 모드 (기본 기능 사용 가능)');
                 break;
         }
     }
