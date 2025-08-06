@@ -76,10 +76,15 @@ class CollaborationManager {
             // Python 서버의 Yjs WebSocket에 연결
             const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsHost = window.location.host;
-            this.provider = new Y.WebsocketProvider(`${wsProtocol}//${wsHost}/yjs-websocket`, 'zeromq-topic-manager', this.ydoc);
+            
+            // WebSocket URL 구성
+            const wsUrl = `${wsProtocol}//${wsHost}/yjs-websocket`;
+            console.log('Yjs WebSocket 연결 시도:', wsUrl);
+            
+            this.provider = new Y.WebsocketProvider(wsUrl, 'zeromq-topic-manager', this.ydoc);
             
             // 공유 XML 데이터 타입 가져오기
-            this.xmlData = this.ydoc.getXmlElement('applications');
+            this.xmlData = this.ydoc.getXmlElement('Applications');
             
             // 사용자 존재감을 위한 awareness 설정
             this.awareness = this.provider.awareness;
@@ -92,7 +97,7 @@ class CollaborationManager {
             this.initializeXMLStructure();
             
             console.log('협업 시스템 초기화 완료');
-            this.updateConnectionStatus('connected');
+            this.updateConnectionStatus('connecting');
             
         } catch (error) {
             console.error('협업 초기화 실패:', error);
@@ -144,6 +149,20 @@ class CollaborationManager {
             console.error('연결 오류:', error);
             this.updateConnectionStatus('error');
         });
+        
+        // 연결 성공 시 상태 업데이트
+        this.provider.on('sync', (isSynced) => {
+            console.log('Yjs 동기화 상태:', isSynced);
+            if (isSynced) {
+                this.updateConnectionStatus('connected');
+            }
+        });
+        
+        // 연결 해제 시 상태 업데이트
+        this.provider.on('disconnect', () => {
+            console.log('Yjs 연결 해제됨');
+            this.updateConnectionStatus('disconnected');
+        });
     }
 
     /**
@@ -155,13 +174,14 @@ class CollaborationManager {
             return;
         }
         
-        if (this.xmlData.length === 0) {
+        // XML 요소가 비어있으면 기본 구조 생성
+        if (!this.xmlData.firstChild) {
             // 기본 XML 구조 생성
             const applications = new Y.XmlElement('Applications');
             applications.setAttribute('xmlns', 'http://zeromq-topic-manager/schema');
             applications.setAttribute('version', '1.0');
             
-            this.xmlData.push([applications]);
+            this.xmlData.appendChild(applications);
             console.log('기본 XML 구조 초기화됨');
         }
     }
@@ -231,7 +251,7 @@ class CollaborationManager {
         }
         
         try {
-            const applications = this.xmlData.get(0);
+            const applications = this.xmlData.firstChild;
             if (!applications) {
                 throw new Error('Applications 루트를 찾을 수 없음');
             }
@@ -240,7 +260,7 @@ class CollaborationManager {
             application.setAttribute('name', name);
             application.setAttribute('description', description);
 
-            applications.push([application]);
+            applications.appendChild(application);
 
             console.log(`응용프로그램 추가됨: ${name}`);
             
@@ -293,16 +313,16 @@ class CollaborationManager {
         }
         
         try {
-            const applications = this.xmlData.get(0);
+            const applications = this.xmlData.firstChild;
             if (!applications) {
                 throw new Error('Applications 루트를 찾을 수 없음');
             }
 
             // 응용프로그램 찾기
             let targetApp = null;
-            for (let i = 0; i < applications.length; i++) {
-                const app = applications.get(i);
-                if (app.getAttribute('name') === appName) {
+            for (let i = 0; i < applications.childNodes.length; i++) {
+                const app = applications.childNodes[i];
+                if (app.nodeName === 'Application' && app.getAttribute('name') === appName) {
                     targetApp = app;
                     break;
                 }
@@ -319,7 +339,7 @@ class CollaborationManager {
             topic.setAttribute('direction', direction);
             topic.setAttribute('description', description);
 
-            targetApp.push([topic]);
+            targetApp.appendChild(topic);
 
             console.log(`토픽 ${topicName}을 응용프로그램 ${appName}에 추가됨`);
             
@@ -485,7 +505,8 @@ class CollaborationManager {
                 };
             }
             
-            const applications = this.xmlData.get(0);
+            // XML 요소에서 구조 추출
+            const applications = this.xmlData.firstChild;
             if (!applications) {
                 return {
                     Applications: {
@@ -504,26 +525,32 @@ class CollaborationManager {
                 }
             };
 
-            for (let i = 0; i < applications.length; i++) {
-                const app = applications.get(i);
-                const appData = {
-                    '@name': app.getAttribute('name'),
-                    '@description': app.getAttribute('description') || '',
-                    Topic: []
-                };
-
-                for (let j = 0; j < app.length; j++) {
-                    const topic = app.get(j);
-                    const topicData = {
-                        '@name': topic.getAttribute('name'),
-                        '@proto': topic.getAttribute('proto'),
-                        '@direction': topic.getAttribute('direction'),
-                        '@description': topic.getAttribute('description') || ''
+            // Application 요소들 처리
+            for (let i = 0; i < applications.childNodes.length; i++) {
+                const app = applications.childNodes[i];
+                if (app.nodeName === 'Application') {
+                    const appData = {
+                        '@name': app.getAttribute('name'),
+                        '@description': app.getAttribute('description') || '',
+                        Topic: []
                     };
-                    appData.Topic.push(topicData);
-                }
 
-                result.Applications.Application.push(appData);
+                    // Topic 요소들 처리
+                    for (let j = 0; j < app.childNodes.length; j++) {
+                        const topic = app.childNodes[j];
+                        if (topic.nodeName === 'Topic') {
+                            const topicData = {
+                                '@name': topic.getAttribute('name'),
+                                '@proto': topic.getAttribute('proto'),
+                                '@direction': topic.getAttribute('direction'),
+                                '@description': topic.getAttribute('description') || ''
+                            };
+                            appData.Topic.push(topicData);
+                        }
+                    }
+
+                    result.Applications.Application.push(appData);
+                }
             }
 
             return result;
@@ -708,7 +735,15 @@ class CollaborationManager {
                 statusEl.find('i').attr('class', 'fas fa-info-circle me-2');
                 statusEl.find('span').text('오프라인 모드 (기본 기능 사용 가능)');
                 break;
+            default:
+                statusEl.removeClass('alert-success alert-warning alert-danger').addClass('alert-info');
+                statusEl.find('i').attr('class', 'fas fa-info-circle me-2');
+                statusEl.find('span').text(`상태: ${status}`);
+                break;
         }
+        
+        // 미리보기 상태도 업데이트
+        this.updatePreviewStatus();
     }
 
     /**
