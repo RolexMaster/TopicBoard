@@ -19,6 +19,8 @@ from pydantic import BaseModel
 
 from pycrdt import Doc, Map, Array
 import pycrdt
+import struct
+import base64
 from models.file_manager import xml_file_manager
 
 # 모델 정의
@@ -605,18 +607,49 @@ async def yjs_websocket_endpoint(websocket: WebSocket):
     print("🔌 새로운 Yjs WebSocket 연결")
     
     try:
-        # Yjs 프로토콜 처리
-        # 바이너리 메시지 처리
+        # Yjs 프로토콜 직접 구현
         while True:
             try:
                 # 바이너리 메시지 수신
                 message = await websocket.receive_bytes()
                 print(f"📨 Yjs 바이너리 메시지 수신: {len(message)} bytes")
                 
-                # Yjs 문서에 메시지 적용
-                # 실제로는 Yjs 프로토콜을 파싱하고 처리해야 함
-                # 현재는 간단한 에코 응답
-                await websocket.send_bytes(message)
+                # Yjs 프로토콜 파싱 및 처리
+                if len(message) > 0:
+                    # 첫 번째 바이트는 메시지 타입
+                    msg_type = message[0]
+                    
+                    if msg_type == 0:  # Sync step 1
+                        print("🔄 Yjs Sync step 1")
+                        # 문서 상태 전송
+                        doc_state = topic_manager.doc.get_update()
+                        response = struct.pack('B', 1) + doc_state  # Sync step 2
+                        await websocket.send_bytes(response)
+                        
+                    elif msg_type == 1:  # Sync step 2
+                        print("🔄 Yjs Sync step 2")
+                        # 클라이언트 업데이트 적용
+                        if len(message) > 1:
+                            update = message[1:]
+                            topic_manager.doc.apply_update(update)
+                            print("✅ 문서 업데이트 적용됨")
+                        
+                    elif msg_type == 2:  # Update
+                        print("📝 Yjs Update")
+                        # 클라이언트 업데이트 적용
+                        if len(message) > 1:
+                            update = message[1:]
+                            topic_manager.doc.apply_update(update)
+                            print("✅ 문서 업데이트 적용됨")
+                            # 다른 클라이언트에게 브로드캐스트
+                            broadcast_msg = struct.pack('B', 2) + update
+                            # 여기서는 단순히 에코로 응답
+                            await websocket.send_bytes(broadcast_msg)
+                    
+                    else:
+                        print(f"❓ 알 수 없는 Yjs 메시지 타입: {msg_type}")
+                        # 에코 응답
+                        await websocket.send_bytes(message)
                 
             except WebSocketDisconnect:
                 break

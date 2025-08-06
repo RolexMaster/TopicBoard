@@ -73,13 +73,12 @@ class CollaborationManager {
         }
         
         try {
-            // Node.js 서버의 Yjs WebSocket에 연결 (포트 1234)
+            // Python 서버의 Yjs WebSocket에 연결
             const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsHost = window.location.hostname;
-            const wsPort = '1234'; // Node.js Yjs 서버 포트
+            const wsHost = window.location.host;
             
             // WebSocket URL 구성
-            const wsUrl = `${wsProtocol}//${wsHost}:${wsPort}`;
+            const wsUrl = `${wsProtocol}//${wsHost}/yjs-websocket`;
             console.log('Yjs WebSocket 연결 시도:', wsUrl);
             
             this.provider = new Y.WebsocketProvider(wsUrl, 'zeromq-topic-manager', this.ydoc);
