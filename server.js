@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const path = require('path');
 const { setupWSConnection } = require('y-websocket/bin/utils');
 const WebSocket = require('ws');
+const Y = require('yjs');
 
 const app = express();
 const server = http.createServer(app);
@@ -23,6 +24,7 @@ app.use(cors({
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(__dirname));
 
 // Serve the main HTML file
 app.get('/', (req, res) => {
@@ -42,7 +44,7 @@ app.post('/api/applications', (req, res) => {
 
 // WebSocket server for Yjs collaboration
 const wss = new WebSocket.Server({ 
-  port: 1234,
+  server: server,
   perMessageDeflate: {
     zlibDeflateOptions: {
       threshold: 1024,
@@ -52,10 +54,7 @@ const wss = new WebSocket.Server({
   }
 });
 
-wss.on('connection', (ws, req) => {
-  console.log('New WebSocket connection for Yjs');
-  setupWSConnection(ws, req);
-});
+
 
 // Yjs 문서 저장소 (메모리 기반)
 const docs = new Map();
@@ -69,6 +68,12 @@ function getOrCreateDoc(docName) {
   }
   return docs.get(docName);
 }
+
+// Yjs WebSocket 연결 처리
+wss.on('connection', (ws, req) => {
+  console.log('New WebSocket connection for Yjs');
+  setupWSConnection(ws, req, { docName: 'zeromq-topic-manager' });
+});
 
 // Socket.IO for additional real-time features
 const io = socketIo(server, {

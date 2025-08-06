@@ -51,8 +51,8 @@
     <pre id="xmlData">로딩 중...</pre>
     
     <!-- Yjs 라이브러리 -->
-    <script src="https://cdn.jsdelivr.net/npm/yjs@13.6.10/dist/yjs.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/y-websocket@1.5.0/dist/y-websocket.min.js"></script>
+    <script src="/js/yjs.min.js"></script>
+    <script src="/js/y-websocket.min.js"></script>
     
     <script>
         let ydoc = null;
@@ -148,17 +148,17 @@
             updateStatus('connecting', '연결 중...');
             
             try {
-                // Yjs 문서 생성
-                ydoc = new Y.Doc();
+                        // Yjs 문서 생성
+        ydoc = new yjs.Doc();
                 log('Yjs 문서 생성됨');
                 
                 // WebSocket 연결
                 const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
                 const wsHost = window.location.host;
-                const wsUrl = `${wsProtocol}//${wsHost}/yjs-websocket`;
+                const wsUrl = `${wsProtocol}//${wsHost}`;
                 log(`WebSocket URL: ${wsUrl}`);
                 
-                provider = new Y.WebsocketProvider(wsUrl, 'zeromq-topic-manager', ydoc);
+                provider = new yWebsocket.WebsocketProvider(wsUrl, 'zeromq-topic-manager', ydoc);
                 log('WebSocket 프로바이더 생성됨');
                 
                 // XML 데이터 가져오기
@@ -231,7 +231,7 @@
         // 페이지 로드 시 자동 연결
         window.addEventListener('load', () => {
             log('페이지 로드됨');
-            if (typeof Y !== 'undefined') {
+            if (typeof yjs !== 'undefined') {
                 log('Yjs 라이브러리 로드됨');
                 connect();
             } else {
