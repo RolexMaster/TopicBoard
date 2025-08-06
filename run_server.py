@@ -14,13 +14,16 @@ def main():
     print("-" * 50)
     
     try:
+        # Azure 배포를 위한 포트 설정
+        port = os.environ.get("PORT", "8000")
+        
         # uvicorn으로 서버 실행
         cmd = [
             sys.executable, "-m", "uvicorn",
             "main:app",
             "--host", "0.0.0.0",
-            "--port", "8000",
-            "--reload"
+            "--port", port,
+            "--reload" if os.environ.get("ENVIRONMENT") == "development" else ""
         ]
         
         subprocess.run(cmd, check=True)

@@ -9,7 +9,12 @@
 ### Startup Command
 Azure Portal > App Service > Configuration > General settings > Startup Command:
 ```
-python -m uvicorn main:app --host 0.0.0.0 --port $PORT
+python run_server.py
+```
+
+또는 직접 uvicorn 사용:
+```
+python -m uvicorn main:app --host 0.0.0.0 --port $PORT --reload false
 ```
 
 ## 2. 정적 파일 서빙 확인
